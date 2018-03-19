@@ -66,18 +66,18 @@ DataValidator::DataValidator() :
 void
 DataValidator::put(uint64_t timestamp, float val, uint64_t error_count_in, int priority_in)
 {
-	float data[dimensions] = { val }; //sets the first value and all others to 0
-
-	put(timestamp, data, error_count_in, priority_in);
+	// sets the first value and all others to 0
+	put(timestamp, matrix::Vector3f{val, 0.0f, 0.0f}, error_count_in, priority_in);
 }
 
 void
-DataValidator::put(uint64_t timestamp, float val[dimensions], uint64_t error_count_in, int priority_in)
+DataValidator::put(uint64_t timestamp, const matrix::Vector3f &val, uint64_t error_count_in, int priority_in)
 {
 	_event_count++;
 
 	if (error_count_in > _error_count) {
 		_error_density += (error_count_in - _error_count);
+
 	} else if (_error_density > 0) {
 		_error_density--;
 	}
@@ -88,29 +88,31 @@ DataValidator::put(uint64_t timestamp, float val[dimensions], uint64_t error_cou
 	for (unsigned i = 0; i < dimensions; i++) {
 		if (_time_last == 0) {
 			_mean[i] = 0;
-			_lp[i] = val[i];
+			_lp[i] = val(i);
 			_M2[i] = 0;
+
 		} else {
-			float lp_val = val[i] - _lp[i];
+			float lp_val = val(i) - _lp[i];
 
 			float delta_val = lp_val - _mean[i];
 			_mean[i] += delta_val / _event_count;
 			_M2[i] += delta_val * (lp_val - _mean[i]);
 			_rms[i] = sqrtf(_M2[i] / (_event_count - 1));
 
-			if (fabsf(_value[i] - val[i]) < 0.000001f) {
+			if (fabsf(_value[i] - val(i)) < 0.000001f) {
 				_value_equal_count++;
+
 			} else {
 				_value_equal_count = 0;
 			}
 		}
 
-		_vibe[i] = _vibe[i] * 0.99f + 0.01f * fabsf(val[i] - _lp[i]);
+		_vibe[i] = _vibe[i] * 0.99f + 0.01f * fabsf(val(i) - _lp[i]);
 
 		// XXX replace with better filter, make it auto-tune to update rate
-		_lp[i] = _lp[i] * 0.99f + 0.01f * val[i];
+		_lp[i] = _lp[i] * 0.99f + 0.01f * val(i);
 
-		_value[i] = val[i];
+		_value[i] = val(i);
 	}
 
 	_time_last = timestamp;
@@ -121,31 +123,30 @@ DataValidator::confidence(uint64_t timestamp)
 {
 	float ret = 1.0f;
 
-	/* check if we have any data */
 	if (_time_last == 0) {
+		/* check if we have any data */
 		_error_mask |= ERROR_FLAG_NO_DATA;
 		ret = 0.0f;
 
-	/* timed out - that's it */
 	} else if (timestamp - _time_last > _timeout_interval) {
+		/* timed out - that's it */
 		_error_mask |= ERROR_FLAG_TIMEOUT;
 		ret = 0.0f;
 
-	/* we got the exact same sensor value N times in a row */
 	} else if (_value_equal_count > _value_equal_count_threshold) {
+		/* we got the exact same sensor value N times in a row */
 		_error_mask |= ERROR_FLAG_STALE_DATA;
 		ret = 0.0f;
 
-	/* check error count limit */
 	} else if (_error_count > NORETURN_ERRCOUNT) {
+		/* check error count limit */
 		_error_mask |= ERROR_FLAG_HIGH_ERRCOUNT;
 		ret = 0.0f;
 
-	/* cap error density counter at window size */
 	} else if (_error_density > ERROR_DENSITY_WINDOW) {
+		/* cap error density counter at window size */
 		_error_mask |= ERROR_FLAG_HIGH_ERRDENSITY;
 		_error_density = ERROR_DENSITY_WINDOW;
-
 	}
 
 	/* no critical errors */
@@ -171,7 +172,7 @@ DataValidator::print()
 
 	for (unsigned i = 0; i < dimensions; i++) {
 		ECL_INFO("\tval: %8.4f, lp: %8.4f mean dev: %8.4f RMS: %8.4f conf: %8.4f",
-			(double) _value[i], (double)_lp[i], (double)_mean[i],
-			(double)_rms[i], (double)confidence(hrt_absolute_time()));
+			 (double) _value[i], (double)_lp[i], (double)_mean[i],
+			 (double)_rms[i], (double)confidence(hrt_absolute_time()));
 	}
 }

@@ -44,7 +44,10 @@
 #include <cmath>
 #include <stdint.h>
 
-class __EXPORT DataValidator {
+#include <matrix/matrix/math.hpp>
+
+class __EXPORT DataValidator
+{
 public:
 	static const unsigned dimensions = 3;
 
@@ -63,20 +66,20 @@ public:
 	 *
 	 * @param val		Item to put
 	 */
-	void			put(uint64_t timestamp, float val[dimensions], uint64_t error_count, int priority);
+	void			put(uint64_t timestamp, const matrix::Vector3f &val, uint64_t error_count, int priority);
 
 	/**
 	 * Get the next sibling in the group
 	 *
 	 * @return		the next sibling
 	 */
-	DataValidator*		sibling() { return _sibling; }
+	DataValidator		*sibling() { return _sibling; }
 
 	/**
 	 * Set the sibling to the next node in the group
 	 *
 	 */
-	void			setSibling(DataValidator* new_sibling) { _sibling = new_sibling; }
+	void			setSibling(DataValidator *new_sibling) { _sibling = new_sibling; }
 
 	/**
 	 * Get the confidence of this validator
@@ -94,7 +97,7 @@ public:
 	 * Get the values of this validator
 	 * @return		the stored value
 	 */
-	float*			value() { return _value; }
+	float			*value() { return _value; }
 
 	/**
 	 * Get the used status of this validator
@@ -123,13 +126,13 @@ public:
 	 * Get the RMS values of this validator
 	 * @return		the stored RMS
 	 */
-	float*			rms() { return _rms; }
+	float			*rms() { return _rms; }
 
 	/**
 	 * Get the vibration offset
 	 * @return		the stored vibration offset
 	 */
-	float*			vibration_offset() { return _vibe; }
+	float			*vibration_offset() { return _vibe; }
 
 	/**
 	 * Print the validator value
@@ -185,11 +188,13 @@ private:
 	float _value_equal_count;		/**< equal values in a row */
 	float _value_equal_count_threshold; /**< when to consider an equal count as a problem */
 	DataValidator *_sibling;		/**< sibling in the group */
-	static const constexpr unsigned NORETURN_ERRCOUNT = 10000;	/**< if the error count reaches this value, return sensor as invalid */
+	static const constexpr unsigned NORETURN_ERRCOUNT =
+		10000;	/**< if the error count reaches this value, return sensor as invalid */
 	static const constexpr float ERROR_DENSITY_WINDOW = 100.0f; 	/**< window in measurement counts for errors */
-	static const constexpr unsigned VALUE_EQUAL_COUNT_DEFAULT = 100;	/**< if the sensor value is the same (accumulated also between axes) this many times, flag it */
+	static const constexpr unsigned VALUE_EQUAL_COUNT_DEFAULT =
+		100;	/**< if the sensor value is the same (accumulated also between axes) this many times, flag it */
 
 	/* we don't want this class to be copied */
-	DataValidator(const DataValidator&) = delete;
-	DataValidator operator=(const DataValidator&) = delete;
+	DataValidator(const DataValidator &) = delete;
+	DataValidator operator=(const DataValidator &) = delete;
 };
