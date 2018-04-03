@@ -1387,7 +1387,7 @@ void Ekf::controlVelPosFusion()
 		if (_control_status.flags.in_air && _control_status.flags.tilt_align) {
 			_posObsNoiseNE = fmaxf(_params.pos_noaid_noise, _params.gps_pos_noise);
 		} else {
-			_posObsNoiseNE = 0.5f;
+			_posObsNoiseNE = 1.8f;
 		}
 		_vel_pos_innov[3] = _state.pos(0) - _last_known_posNE(0);
 		_vel_pos_innov[4] = _state.pos(1) - _last_known_posNE(1);
